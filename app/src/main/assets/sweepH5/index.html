@@ -1,0 +1,351 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>鲸势区块链溯源系统</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover"/>
+    <link rel="icon" href="./images/logo.png">
+
+    <script src="./libs/vue.js"></script>
+    <script src="./libs/promise.min.js"></script>
+    <script src="./libs/vant.min.js"></script>
+    <!--<script src="https://cdn.jsdelivr.net/npm/vant@2.10/lib/vant.min.js"></script>-->
+
+    <link rel="stylesheet" href="./libs/index.css" type="text/css" />
+    <!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vant@2.10/lib/index.css" type="text/css" />-->
+
+    <link rel="stylesheet" href="./css/app.css?v=1.0" type="text/css" />
+
+</head>
+
+<body>
+
+   
+    <div id="app">
+
+        <div class="page home">
+            <div>
+                <p>鲸势区块链溯源系统</p>
+            </div>
+
+            <transition name="van-slide-left">
+                <div v-show="visible" class="item item1" @click="createOrder">
+                    <span class="item-title1">创建实例</span>
+                    <img class="item-img item-img1" src="./images/Target.png" />
+                </div>
+            </transition>
+
+            <transition name="van-slide-right">
+                <div v-show="visible" class="item item2" @click="comfirmOrder">
+                    <span class="item-title2">扫码检验</span>
+                    <img class="item-img item-img2" src="./images/Barcode.png" />
+                </div>
+            </transition>
+        </div>
+
+        <div v-show="showCreateOrder" class=" create-order">
+            <div>
+                <van-nav-bar
+                        title="创建实例"
+                        left-text=""
+                        left-arrow
+                        @click-left="onCreateBack"
+                />
+            </div>
+
+            <div class="co-item-con">
+
+                <div class="co-item">
+                    <span class="co-item-title">选择操作人</span>
+                    <van-dropdown-menu>
+                        <van-dropdown-item v-model="merchantUserId" :options="option1" />
+                    </van-dropdown-menu>
+                </div>
+                <div class="co-item">
+                    <span class="co-item-title">商品名称</span>
+                    <van-cell-group >
+                        <van-field class="sy-border" v-model="productName" placeholder="输入商品名称" />
+                    </van-cell-group>
+                </div>
+                <div class="co-item">
+                    <span class="co-item-title">商品类别</span>
+                    <van-dropdown-menu>
+                        <van-dropdown-item v-model="productCategoryDesc" :options="option2" />
+                    </van-dropdown-menu>
+                </div>
+
+                <div class="co-item">
+                    <span class="co-item-title">商品详情</span>
+                    <van-field class="sy-border"
+                            v-model="productDesc"
+                            rows="5"
+                            autosize
+                            type="textarea"
+                            maxlength="200"
+                            placeholder="商品详情"
+                            show-word-limit
+                    />
+
+                </div>
+
+                <div class="co-item" style="margin-top: 2rem;">
+                    <van-button type="primary" @click="confirmOrder">创建</van-button>
+                </div>
+
+            </div>
+            <div v-if="isCreate" class="loading-con">
+                <van-loading type="spinner" color="#1989fa" />
+            </div>
+        </div>
+
+        <div v-show="showPrint" class="page-print">
+            <div>
+                <van-nav-bar
+                        title="创建实例"
+                        left-text=""
+                        left-arrow
+                        @click-left="onPrintBack"
+                />
+            </div>
+
+            <div class="page-print-con">
+                <div style="    margin: 2rem;">
+                    <div>
+                        <img src="./images/print.png" />
+                    </div>
+                    <div style="text-align: center;font-weight: bold;color: black;"><span>正在打印....</span></div>
+                </div>
+                <div class="sp-item-con">
+                    <div class="sp-item">
+                        <span class="span1">ID:</span>
+                        <span class="span2">{{printData.barcodeId}}</span>
+                    </div>
+                    <div class="sp-item">
+                        <span class="span1">操作人：</span>
+                        <span class="span2">{{printData.operator}}</span>
+                    </div>
+                    <div class="sp-item">
+                        <span class="span1">商品名：</span>
+                        <span class="span2">{{printData.productName}}</span>
+                    </div>
+                    <div class="sp-item">
+                        <span class="span1">商品类别：</span>
+                        <span class="span2">{{printData.productCategoryDesc}}</span>
+                    </div>
+                    <div class="sp-item">
+                        <span class="span1">日期：</span>
+                        <span class="span2">{{printData.operationTime}}</span>
+                    </div>
+                    <div class="sp-item">
+                        <span class="span1">地点：</span>
+                        <span class="span2">{{printData.operationLocation}}</span>
+                    </div>
+                    <div class="sp-item">
+                        <span class="span1">商品详情：</span>
+                        <span class="span2">{{printData.productDesc}}</span>
+                    </div>
+                </div>
+
+            </div>
+
+
+
+
+        </div>
+        <div v-if="showQRcode" class="page-qrcode" >
+
+            <div class="page-qrcode-con">
+                <img src="./images/qr_border.png" />
+
+            </div>
+        </div>
+
+        <div v-if="showCZ" class="page-cz">
+            <div>
+                <van-nav-bar
+                        title="选择商户类型操作人"
+                        left-text=""
+                        left-arrow
+                        @click-left="hideCZ"
+                />
+            </div>
+
+            <div v-if="!qrIsEnd" class="qr-item" >
+                <div><span class="co-item-title">选择商户：</span></div>
+                <van-dropdown-menu>
+
+                    <van-dropdown-item v-model="shID" :options="sflist" />
+
+                </van-dropdown-menu>
+                <div style="margin-top: 1rem;"><span class="co-item-title" >选择操作人：</span></div>
+                <van-dropdown-menu >
+                    <van-dropdown-item v-model="yhID" :options="yhlist" />
+                </van-dropdown-menu>
+
+            </div>
+
+            <div class="qr-item">
+                <div>当前可操作环节</div>
+                <div class="qr-line-con">
+
+                    <img :src='"./images/code_statu"+(curQRIndex+1)+".svg"'>
+                    <!--<van-steps direction="vertical" :active="curQRIndex" active-color="#38f">-->
+                        <!--<van-step>-->
+                            <!--<h3>生产 &#45;&#45;&#45;&#45;</h3>-->
+                            <!--&lt;!&ndash;<p>2016-07-12 12:40</p>&ndash;&gt;-->
+                        <!--</van-step>-->
+                        <!--<van-step>-->
+                            <!--<h3>仓储 &#45;&#45;&#45;&#45;</h3>-->
+                            <!--&lt;!&ndash;<p>2016-07-11 10:00</p>&ndash;&gt;-->
+                        <!--</van-step>-->
+                        <!--<van-step>-->
+                            <!--<h3>检验 &#45;&#45;&#45;&#45;</h3>-->
+                            <!--&lt;!&ndash;<p>2016-07-10 09:30</p>&ndash;&gt;-->
+                        <!--</van-step>-->
+                    <!--</van-steps>-->
+                </div>
+
+            </div>
+
+            <div class="qr-item" style="margin-top: 3rem;">
+                <van-button type="primary" :disabled="!isCZ"  @click="confirmCZ">{{czText}}</van-button>
+            </div>
+
+            <div v-if="czLoading" class="loading-con">
+                <van-loading type="spinner" color="#1989fa" />
+            </div>
+
+        </div>
+
+        <div v-if="showCZJG" class="page-czjg">
+            <div>
+                <van-nav-bar
+                        title="操作结果"
+                        left-text=""
+                        left-arrow
+                        @click-left="showCZJG=false"
+                />
+            </div>
+
+            <div class="cz-success">
+                <img src="./images/icon_success.svg" />
+                <span>{{statu_msg}}</span>
+            </div>
+
+            <div class="czjg-item-con">
+
+                <div class="czjg-item">
+                    <div class="czjg-itemss">
+                        <img src="./images/msg.svg">
+                        <span>条码号:</span>
+                    </div>
+                    <div>{{codeMsgs.productInfo.barcodeId}}</div>
+                </div>
+                <div class="czjg-item">
+                    <div class="czjg-itemss">
+                        <img src="./images/msg.svg">
+                        <span>产品名称:</span>
+                    </div>
+                    <div>{{codeMsgs.productInfo.productName}}</div>
+                </div>
+                <div class="czjg-item">
+                    <div class="czjg-itemss">
+                        <img src="./images/msg.svg">
+                        <span>产品描述:</span>
+                    </div>
+                    <div>{{codeMsgs.productInfo.productDesc.slice(0,16)}}</div>
+                </div>
+                <div class="czjg-item">
+                    <div class="czjg-itemss">
+                        <img src="./images/msg.svg">
+                        <span>产品类别:</span>
+                    </div>
+                    <div>{{codeMsgs.productInfo.productCategoryDesc}}</div>
+                </div>
+                <div class="czjg-item">
+                    <div class="czjg-itemss">
+                        <img src="./images/msg.svg">
+                        <span>产品批次:</span>
+                    </div>
+                    <div>{{codeMsgs.productInfo.batch}}</div>
+                </div>
+                <div class="czjg-item">
+                    <div class="czjg-itemss">
+                        <img src="./images/msg.svg">
+                        <span>产品品牌:</span>
+                    </div>
+                    <div>{{codeMsgs.productInfo.brand}}</div>
+                </div>
+
+
+
+                <div class="wl-con">
+                    <span>流程列表</span>
+                </div>
+
+                <div v-for="(item,index) in codeMsgs.productFlows" style="margin-bottom: 1rem;">
+                    <div class="czjg-item2">
+                        <div class="czjg-itemss">
+                            <img src="./images/msg.svg">
+                            <span>当前流程:</span>
+                        </div>
+                        <div>{{item.operationName}}</div>
+                    </div>
+
+                    <div class="czjg-item2">
+                        <div class="czjg-itemss">
+                            <img src="./images/msg.svg">
+                            <span>操作时间:</span>
+                        </div>
+                        <div>{{item.operationTime}}</div>
+                    </div>
+
+                    <div class="czjg-item2">
+                        <div class="czjg-itemss">
+                            <img src="./images/msg.svg">
+                            <span>操作商:</span>
+                        </div>
+                        <div>{{item.merchantName}}</div>
+                    </div>
+                    <div class="czjg-item2">
+                        <div class="czjg-itemss">
+                            <img src="./images/msg.svg">
+                            <span>操作人:</span>
+                        </div>
+                        <div>{{item.merchantUserName}}</div>
+                    </div>
+                    <div class="czjg-item2">
+                        <div class="czjg-itemss">
+                            <img src="./images/msg.svg">
+                            <span>定位详细:</span>
+                        </div>
+                        <div>{{item.locationDetail}}</div>
+                    </div>
+
+                    <div v-if="index<codeMsgs.productFlows.length-1" style="text-align: center;">
+                        <van-icon  name="down" size="1rem" color="#27c38a" />
+                    </div>
+
+
+
+                </div>
+
+
+
+
+            </div>
+        </div>
+
+    </div>
+
+
+
+
+
+    <script>
+    </script>
+    <!--<script src="./js/app.js?v=1.0"></script>-->
+    <script src="./js/app.min.js?v=1.0"></script>
+</body>
+
+</html>
