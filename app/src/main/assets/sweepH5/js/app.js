@@ -177,7 +177,7 @@ var api;
                         reject(e);
                     }
                 };
-                A2H5.post('keyfn', JSON.stringify({data:"keyfn"}), h5OSCallbackFun);
+                A2H5.post('keyfn', JSON.stringify({data: "keyfn"}), h5OSCallbackFun);
             });
         };
         /**
@@ -322,6 +322,11 @@ let app = new window["Vue"]({
                 "category": 3
             }],
             sflist: [],
+            ditulist: [
+                {x: 116.982045, y: 32.610683},
+                {x: 121.475558, y: 31.229767},
+                {x: 118.891121, y: 29.027053},
+            ],
             yhlist: [],
             yh: [
                 {
@@ -372,36 +377,33 @@ let app = new window["Vue"]({
             czText: "检验",
             qrIsEnd: false,
             czLoading: false,
-            codeMsgs:{},
-            codeCallback:null,
-            statu_msg:"操作成功"
+            codeMsgs: {},
+            codeCallback: null,
+            BDMap: null,
+            statu_msg: "操作成功",
         },
         created: function () {
             trace("created");
-            setTimeout(()=>{
+            setTimeout(() => {
                 document.getElementById("app").style.display = "block"
-            },250)
+            }, 250)
             this.init();
         },
         methods: {
             init: function () {
                 this.getYHCZ();
-
-
-
-
                 //设置过去code 方法
-                window["getCode"]= (data)=> {
-                    if(this.codeCallback){
+                window["getCode"] = (data) => {
+                    if (this.codeCallback) {
                         this.codeCallback(data);
                     }
                 }
 
-                document.onkeydown=function(event){
+                document.onkeydown = function (event) {
                     var e = event || window.event || arguments.callee.caller.arguments[0];
 
-                    trace("code="+e.keyCode)
-                    if(e.keyCode==114){
+                    trace("code=" + e.keyCode)
+                    if (e.keyCode == 114) {
                         api.A2H5.keyfn();
                     }
 
@@ -439,17 +441,18 @@ let app = new window["Vue"]({
                 this.showQRcode = false;
                 this.showCZ = true;
 
-                let path = this.js_path + "/api/product/flow/query/"+this.barcodeId;
+                let path = this.js_path + "/api/product/flow/query/" + this.barcodeId;
                 interfaceOS.get(path, (code, res) => {
                     trace("post", code, res);
 
                     if (code == 1 && res.code == 200) {
-                        if(res.data.done==1){       //全流程是否完成 0否 1是
+                        if (res.data.done == 1) {       //全流程是否完成 0否 1是
                             this.codeMsgs = res.data;
                             this.hideCZ();
                             this.statu_msg = "已检验通过";
                             this.showCZJG = true;
-                        }else{
+                            this.initMap()
+                        } else {
                             this.curQRIndex = Number(res.data.currentFlowStatus) - 2;
                         }
                     } else {
@@ -458,15 +461,12 @@ let app = new window["Vue"]({
                             content: res.message || res.msg
                         })
                     }
-
                 }, 30000);
 
             },
             hideCZ: function () {
                 this.showCZ = false;
             },
-
-
             createOrder: function () {
                 trace("createOrder");
                 this.showCreateOrder = true;
@@ -475,19 +475,17 @@ let app = new window["Vue"]({
                 trace("comfirmOrder")
                 this.showQRcode = true;
 
-                this.codeCallback = (data)=>{
+                this.codeCallback = (data) => {
                     data = JSON.parse(data);
-                    if(data.code==200){
+                    if (data.code == 200) {
                         this.codeCallback = null;
                         this.barcodeId = data.data;
                         this.hideQR();
-                    }else{
+                    } else {
 
                     }
-                    trace("codeCallback"+data.data)
-
+                    trace("codeCallback" + data.data)
                 }
-
                 api.A2H5.getCode()
             },
             confirmOrder: function () {
@@ -510,22 +508,21 @@ let app = new window["Vue"]({
                     message: data.content,
                 })
             },
-
             postCreate: async function () {
                 let res = await api.A2H5.getPoint();
-                trace('getPoint-'+res.code)
-                if(res.code == 200){
+                trace('getPoint-' + res.code)
+                if (res.code == 200) {
 
-                }else{
+                } else {
                     this.alert({
-                        tile:"获取位置失败",
-                        content:res.message,
+                        tile: "获取位置失败",
+                        content: res.message,
                     })
                     this.isCreate = false;
                     return;
                 }
                 let data = {
-                    "barcodeId": Math.random().toString(16).slice(2,7)+Math.random().toString(16).slice(2,7),
+                    "barcodeId": Math.random().toString(16).slice(2, 7) + Math.random().toString(16).slice(2, 7),
                     "productName": this.productName,
                     "productDesc": this.productDesc,
                     "productCategory": this.productCategoryDesc,
@@ -548,21 +545,17 @@ let app = new window["Vue"]({
                             content: res.message || res.msg
                         })
                     }
-
                 }, 30000);
-
             },
             toOrder: function () {
-
             },
-
             toPrint: async function () {
                 this.showPrint = true;
-                let res = await api.A2H5.print({data:this.printData.barcodeId})
-                trace("print"+this.printData.barcodeId+JSON.stringify(res))
+                let res = await api.A2H5.print({data: this.printData.barcodeId})
+                trace("print" + this.printData.barcodeId + JSON.stringify(res))
                 this.alert({
-                    title:"打印结果",
-                    content:res.message
+                    title: "打印结果",
+                    content: res.message
                 })
             },
             onCreateBack: function () {
@@ -617,8 +610,6 @@ let app = new window["Vue"]({
                                 content: res.message || res.msg
                             })
                         }
-
-
                         trace("checkCode=", res)
                     }
                 }, 30000)
@@ -627,17 +618,26 @@ let app = new window["Vue"]({
                 if (!this.isCZ) {
                     this.hideCZ();
                     this.showCZJG = true;
+                    this.initMap()
                     return;
                 }
 
                 let res = await api.A2H5.getPoint();
-                trace('getPoint-'+res.code)
-                if(res.code == 200){
+                // let res = {
+                //     code: 200,
+                //     data: {
+                //         long: "120.21201",
+                //         lat: "30.2084",
+                //         address: "杭州"
+                //     }
+                // }
+                trace('getPoint-' + res.code)
+                if (res.code == 200) {
 
-                }else{
+                } else {
                     this.alert({
-                        tile:"获取位置失败",
-                        content:res.message,
+                        tile: "获取位置失败",
+                        content: res.message,
                     })
                     this.isCreate = false;
                     return;
@@ -661,12 +661,13 @@ let app = new window["Vue"]({
                             this.hideCZ();
 
                             this.codeMsgs = res.data;
-                            if(this.curQRIndex==0){
+                            if (this.curQRIndex == 0) {
                                 this.statu_msg = "操作成功";
-                            }else{
+                            } else {
                                 this.statu_msg = "检验通过";
                             }
                             this.showCZJG = true;
+                            this.initMap()
                         } else {
                             this.alert({
                                 title: "提交",
@@ -681,6 +682,92 @@ let app = new window["Vue"]({
                     }
                 }, 30000)
             },
+
+            initMap: function () {
+                setTimeout(() => {
+                    this.createMap();
+                    this.addMapControl();
+                    this.addPolyline();
+                }, 500)
+            },
+            createMap: function () {
+                this.BDMap = new BMap.Map("dituContent");
+                let point = new BMap.Point(108.948021, 34.263161);
+                this.BDMap.centerAndZoom(point, 5);
+                this.ditulist = [];
+                this.codeMsgs.productFlows.forEach(item => {
+                    this.ditulist.push({x: item.locationLongitude, y: item.locationLatitude});
+                });
+                this.BDMap.enableDragging();
+                this.BDMap.enableScrollWheelZoom();
+                this.BDMap.enableDoubleClickZoom();
+                this.BDMap.enableKeyboard();
+            },
+            addMapControl: function () {
+                let ctrl_nav = new BMap.NavigationControl({
+                    anchor: BMAP_ANCHOR_TOP_LEFT,
+                    type: BMAP_NAVIGATION_CONTROL_LARGE
+                });
+                this.BDMap.addControl(ctrl_nav);
+                let ctrl_ove = new BMap.OverviewMapControl({anchor: BMAP_ANCHOR_BOTTOM_RIGHT, isOpen: 1});
+                this.BDMap.addControl(ctrl_ove);
+                let ctrl_sca = new BMap.ScaleControl({anchor: BMAP_ANCHOR_BOTTOM_LEFT});
+                this.BDMap.addControl(ctrl_sca);
+            },
+            addPolyline: function () {
+                let points = [];
+                let centerPoint = {};
+                let mapZoom = 5;
+                if (this.ditulist.length == 1) {
+                    centerPoint = {x: this.ditulist[0].x, y: this.ditulist[0].y};
+                    mapZoom = 14;
+                    let Position1 = new BMap.Point(this.ditulist[0].x, this.ditulist[0].y);
+                    points = [Position1];
+                }
+                if (this.ditulist.length == 2) {
+                    let Position1 = new BMap.Point(this.ditulist[0].x, this.ditulist[0].y);
+                    let Position2 = new BMap.Point(this.ditulist[1].x, this.ditulist[1].y);
+                    points = [Position1, Position2];
+                    centerPoint = {
+                        x: (Number(this.ditulist[0].x) + Number(this.ditulist[1].x)) / 2,
+                        y: (Number(this.ditulist[0].y) + Number(this.ditulist[1].y)) / 2,
+                    };
+                    let max = this.GetDistance(this.ditulist[0].x, this.ditulist[0].y, this.ditulist[1].x, this.ditulist[1].y);
+                }
+                if (this.ditulist.length == 3) {
+                    let Position1 = new BMap.Point(this.ditulist[0].x, this.ditulist[0].y);
+                    let Position2 = new BMap.Point(this.ditulist[1].x, this.ditulist[1].y);
+                    let Position3 = new BMap.Point(this.ditulist[2].x, this.ditulist[2].y);
+                    points = [Position1, Position2, Position3];
+                    centerPoint = {
+                        x: (Number(this.ditulist[0].x) + Number(this.ditulist[1].x) + Number(this.ditulist[2].x)) / 3,
+                        y: (Number(this.ditulist[0].y) + Number(this.ditulist[1].y) + Number(this.ditulist[2].y)) / 3,
+                    };
+                    let d1 = this.GetDistance(this.ditulist[0].x, this.ditulist[0].y, this.ditulist[1].x, this.ditulist[1].y);
+                    let d2 = this.GetDistance(this.ditulist[0].x, this.ditulist[0].y, this.ditulist[2].x, this.ditulist[2].y);
+                    let d3 = this.GetDistance(this.ditulist[1].x, this.ditulist[1].y, this.ditulist[2].x, this.ditulist[2].y);
+                    let max = Math.max(d1, d2, d3);
+                }
+                let makers = points.map(p => {
+                    return new BMap.Marker(p)
+                });
+                this.BDMap.centerAndZoom(new BMap.Point(centerPoint.x, centerPoint.y), mapZoom);
+                let curve = new BMapLib.CurveLine(points, {strokeColor: "blue", strokeWeight: 3, strokeOpacity: 0.5});
+                new BMapLib.MarkerClusterer(this.BDMap, {markers: makers});
+                this.BDMap.addOverlay(curve);
+            },
+            GetDistance: function (lat1, lng1, lat2, lng2) {
+                let EARTH_RADIUS = 6378.137;
+                let PI = 3.1415926;
+                let radLat1 = lat1 * PI / 180.0;
+                let radLat2 = lat2 * PI / 180.0;
+                let a = radLat1 - radLat2;
+                let b = (lng1 * PI / 180.0) - (lng2 * PI / 180.0);
+                let s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(a / 2), 2) + Math.cos(radLat1) * Math.cos(radLat2) * Math.pow(Math.sin(b / 2), 2)));
+                s = s * EARTH_RADIUS;
+                s = Math.round(s * 10000) / 10000; //输出为公里
+                return Math.round(s);
+            }
         },
         watch: {
             shID: function (a, b) {
@@ -691,13 +778,13 @@ let app = new window["Vue"]({
                 })
                 trace(a, b, this.yhlist)
                 this.yhID = "";
-            },
+            }
+            ,
             yhID: function (a, b) {
                 if (a != "") {
                     this.checkCode();
                 }
             }
-
         }
     }
 )

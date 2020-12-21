@@ -122,6 +122,8 @@ class MainActivity : AppCompatActivity() {
         webview.settings.domStorageEnabled = true
         webview.settings.cacheMode = WebSettings.LOAD_DEFAULT
         webview.settings.setAppCacheEnabled(true)
+        webview.settings.blockNetworkImage =false
+        webview.settings.blockNetworkLoads =false
         webview.settings.allowFileAccessFromFileURLs = true
         webview.setLayerType(View.LAYER_TYPE_HARDWARE, null)
         webview.webViewClient = object : WebViewClient() {
@@ -135,6 +137,7 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
         }
+//        webview.loadUrl("http://10.10.41.23/sweepH5/index.html")
         webview.loadUrl("file:///android_asset/sweepH5/index.html")
     }
 
@@ -222,8 +225,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
         Log.d("--akun", "key onKeyUp $keyCode")
-//        手持机Fn的键值(PDA keycode)[其它键值为：SCAN:280 BACK:13 LEFT:131 RIGHT:132]
+        // 手持机Fn的键值(PDA keycode)[其它键值为：SCAN:280 BACK:13 LEFT:131 RIGHT:132]
+        // SCAN按钮的广播
+        //  按键抬起
+        //  private static final String  ISMART_KEY_SCAN_UP = "ismart.intent.scanup";
+        //  按键按下
+        //  private static final String  ISMART_KEY_SCAN_DOWN = "ismart.intent.scandown";
         if (keyCode == 133) {
+            // 添加webview后此按钮无法拦截
             // fn 检测
             mPrinter.addAction(PrinterDevice.PRINTER_CMD_KEY_CHECKBLACK)
             mPrinter.printStart()
